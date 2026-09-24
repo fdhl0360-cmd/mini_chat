@@ -35,6 +35,15 @@ jobs:
       - name: Create Android project files
         run: flutter create . --platforms=android
 
+      - name: Add Firebase configuration
+        run: |
+          mkdir -p android/app
+          cp google-services.json android/app/google-services.json
+
+          sed -i '/id("dev.flutter.flutter-plugin-loader")/a\    id("com.google.gms.google-services") version "4.4.4" apply false' android/settings.gradle.kts
+
+          sed -i '/id("dev.flutter.flutter-gradle-plugin")/a\    id("com.google.gms.google-services")' android/app/build.gradle.kts
+
       - name: Get dependencies
         run: flutter pub get
 
