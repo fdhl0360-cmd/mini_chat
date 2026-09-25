@@ -21,6 +21,8 @@ class MiniChatApp extends StatelessWidget {
   }
 }
 
+// ==================== LOGIN ====================
+
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -55,12 +57,13 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isLogin
-              ? 'تم تسجيل الدخول تجريبياً'
-              : 'تم إنشاء الحساب تجريبياً',
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(
+          userName: isLogin
+              ? emailController.text.split('@').first
+              : nameController.text.trim(),
         ),
       ),
     );
@@ -81,9 +84,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   size: 80,
                   color: Colors.blue,
                 ),
-
                 const SizedBox(height: 20),
-
                 const Text(
                   'Mini Chat',
                   textAlign: TextAlign.center,
@@ -92,9 +93,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
                 Text(
                   isLogin
                       ? 'سجّل الدخول إلى حسابك'
@@ -105,7 +104,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     color: Colors.grey,
                   ),
                 ),
-
                 const SizedBox(height: 35),
 
                 if (!isLogin) ...[
@@ -120,7 +118,6 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 16),
                 ],
 
@@ -183,6 +180,284 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ==================== HOME ====================
+
+class HomeScreen extends StatelessWidget {
+  final String userName;
+
+  const HomeScreen({
+    super.key,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Mini Chat',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'تسجيل الخروج',
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AuthScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'أهلاً $userName 👋',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          const Text(
+            'اختر محادثة للبدء',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 16,
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          ChatUserTile(
+            name: 'أحمد',
+            message: 'مرحباً 👋',
+            icon: Icons.person,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ChatScreen(
+                    userName: 'أحمد',
+                  ),
+                ),
+              );
+            },
+          ),
+
+          ChatUserTile(
+            name: 'محمد',
+            message: 'شلونك؟',
+            icon: Icons.person,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ChatScreen(
+                    userName: 'محمد',
+                  ),
+                ),
+              );
+            },
+          ),
+
+          ChatUserTile(
+            name: 'سارة',
+            message: 'هلا 😊',
+            icon: Icons.person,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ChatScreen(
+                    userName: 'سارة',
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================== CHAT USER ====================
+
+class ChatUserTile extends StatelessWidget {
+  final String name;
+  final String message;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const ChatUserTile({
+    super.key,
+    required this.name,
+    required this.message,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+        leading: CircleAvatar(
+          radius: 27,
+          child: Icon(icon),
+        ),
+        title: Text(
+          name,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(message),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+// ==================== CHAT SCREEN ====================
+
+class ChatScreen extends StatefulWidget {
+  final String userName;
+
+  const ChatScreen({
+    super.key,
+    required this.userName,
+  });
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final messageController = TextEditingController();
+
+  final List<String> messages = [
+    'مرحباً 👋',
+    'أهلاً وسهلاً!',
+  ];
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    super.dispose();
+  }
+
+  void sendMessage() {
+    final message = messageController.text.trim();
+
+    if (message.isEmpty) return;
+
+    setState(() {
+      messages.add(message);
+    });
+
+    messageController.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            const CircleAvatar(
+              radius: 18,
+              child: Icon(Icons.person, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Text(widget.userName),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                return Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 11,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primaryContainer,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Text(
+                      messages[index],
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: messageController,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => sendMessage(),
+                      decoration: InputDecoration(
+                        hintText: 'اكتب رسالة...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  FloatingActionButton(
+                    mini: true,
+                    onPressed: sendMessage,
+                    child: const Icon(Icons.send),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
