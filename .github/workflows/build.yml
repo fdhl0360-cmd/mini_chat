@@ -32,8 +32,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Create Android project files
+      - name: Create Android project
         run: flutter create . --platforms=android
+
+      - name: Add Firebase packages
+        run: |
+          flutter pub add firebase_core
+          flutter pub add firebase_auth
 
       - name: Add Firebase configuration
         run: |
