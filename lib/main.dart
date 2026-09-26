@@ -23,6 +23,7 @@ class MiniChatApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: primary,
+          brightness: Brightness.light,
         ),
         scaffoldBackgroundColor: const Color(0xFFF7F5FC),
         appBarTheme: const AppBarTheme(
@@ -43,7 +44,7 @@ class MiniChatApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(18),
-            borderSide: BorderSide(
+            borderSide: const BorderSide(
               color: primary,
               width: 1.5,
             ),
@@ -55,9 +56,9 @@ class MiniChatApp extends StatelessWidget {
   }
 }
 
-// ======================================================
+// =====================================================
 // AUTH GATE
-// ======================================================
+// =====================================================
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -81,9 +82,9 @@ class AuthGate extends StatelessWidget {
   }
 }
 
-// ======================================================
+// =====================================================
 // SPLASH
-// ======================================================
+// =====================================================
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -109,9 +110,9 @@ class SplashScreen extends StatelessWidget {
   }
 }
 
-// ======================================================
+// =====================================================
 // LOGIN
-// ======================================================
+// =====================================================
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -136,9 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() {
-      loading = true;
-    });
+    setState(() => loading = true);
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -175,9 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (mounted) {
-      setState(() {
-        loading = false;
-      });
+      setState(() => loading = false);
     }
   }
 
@@ -303,9 +300,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ======================================================
+// =====================================================
 // REGISTER
-// ======================================================
+// =====================================================
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -337,18 +334,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() {
-      loading = true;
-    });
+    setState(() => loading = true);
 
     try {
-      final result =
+      final credential =
           await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      final user = result.user;
+      final user = credential.user;
 
       if (user == null) {
         showMessage('تعذر إنشاء الحساب');
@@ -375,9 +370,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'تم إنشاء الحساب بنجاح، سجل دخولك الآن',
-          ),
+          content: Text('تم إنشاء الحساب بنجاح، سجل دخولك الآن'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -407,9 +400,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (mounted) {
-      setState(() {
-        loading = false;
-      });
+      setState(() => loading = false);
     }
   }
 
@@ -443,6 +434,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
+              const SizedBox(height: 10),
               const Icon(
                 Icons.person_add_alt_1_rounded,
                 size: 75,
@@ -483,285 +475,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     icon: Icon(
                       obscurePassword
                           ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: FilledButton(
-                  onPressed: loading ? null : register,
-                  child: loading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'إنشاء الحساب',
-                          style: TextStyle(fontSize: 17),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ======================================================
-// HOME
-// ======================================================
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final searchController = TextEditingController();
-
-  bool searching = false;
-  Map<String, dynamic>? foundUser;
-
-  String get currentUid {
-    return FirebaseAuth.instance.currentUser!.uid;
-  }
-
-  Future<void> searchUser() async {
-    final email = searchController.text.trim().toLowerCase();
-
-    if (email.isEmpty) {
-      showMessage('اكتب إيميل الشخص أولاً');
-      return;
-    }
-
-    if (email == FirebaseAuth.instance.currentUser?.email) {
-      showMessage('هذا إيميل حسابك');
-      return;
-    }
-
-    FocusScope.of(context).unfocus();
-
-    setState(() {
-      searching = true;
-      foundUser = null;
-    });
-
-    try {
-      final result = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
-
-      if (!mounted) return;
-
-      if (result.docs.isEmpty) {
-        showMessage('ماكو مستخدم بهذا الإيميل');
-      } else {
-        setState(() {
-          foundUser = result.docs.first.data();
-        });
-      }
-    } on FirebaseException catch (e) {
-      showMessage('خطأ في البحث: ${e.code}');
-    } catch (_) {
-      showMessage('حدث خطأ أثناء البحث');
-    } finally {
-      if (mounted) {
-        setState(() {
-          searching = false;
-        });
-      }
-    }
-  }
-
-  Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
-  }
-
-  void showMessage(String message) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Mini Chat',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: logout,
-            icon: const Icon(Icons.logout_rounded),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            10,
-            20,
-            30,
-          ),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF6750A4),
-                    Color(0xFF8B6FC7),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white24,
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'أهلاً بيك 👋',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          currentUser?.email ?? '',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            const Text(
-              'ابدأ محادثة جديدة',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            TextField(
-              controller: searchController,
-              keyboardType: TextInputType.emailAddress,
-              onSubmitted: (_) => searchUser(),
-              decoration: InputDecoration(
-                hintText: 'ابحث باستخدام الإيميل',
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                ),
-                suffixIcon: searching
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : IconButton(
-                        onPressed: searchUser,
-                        icon: const Icon(
-                          Icons.arrow_forward_rounded,
-                        ),
-                      ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            if (foundUser != null)
-              UserResultCard(
-                user: foundUser!,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatScreen(
-                        otherUser: foundUser!,
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-            const SizedBox(height: 25),
-
-            const Text(
-              'محادثاتك',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            ConversationsList(
-              currentUid: currentUid,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ======================================================
-//
+                         
