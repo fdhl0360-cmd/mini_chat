@@ -82,6 +82,10 @@ class AuthGate extends StatelessWidget {
   }
 }
 
+// =====================================================
+// SPLASH SCREEN
+// =====================================================
+
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
@@ -107,7 +111,7 @@ class SplashScreen extends StatelessWidget {
 }
 
 // =====================================================
-// LOGIN
+// LOGIN SCREEN
 // =====================================================
 
 class LoginScreen extends StatefulWidget {
@@ -133,7 +137,9 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+    });
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -148,18 +154,23 @@ class _LoginScreenState extends State<LoginScreen> {
         case 'invalid-credential':
           message = 'الإيميل أو كلمة السر غير صحيحة';
           break;
+
         case 'wrong-password':
           message = 'كلمة السر غير صحيحة';
           break;
+
         case 'invalid-email':
           message = 'الإيميل غير صحيح';
           break;
+
         case 'too-many-requests':
           message = 'محاولات كثيرة، حاول لاحقاً';
           break;
+
         case 'network-request-failed':
           message = 'تأكد من اتصال الإنترنت';
           break;
+
         default:
           message = 'تعذر تسجيل الدخول: ${e.code}';
       }
@@ -170,7 +181,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (mounted) {
-      setState(() => loading = false);
+      setState(() {
+        loading = false;
+      });
     }
   }
 
@@ -297,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 // =====================================================
-// REGISTER
+// REGISTER SCREEN
 // =====================================================
 
 class RegisterScreen extends StatefulWidget {
@@ -330,7 +343,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+    });
 
     try {
       final credential =
@@ -366,15 +381,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
         case 'email-already-in-use':
           message = 'هذا الإيميل مستخدم مسبقاً';
           break;
+
         case 'invalid-email':
           message = 'الإيميل غير صحيح';
           break;
+
         case 'weak-password':
           message = 'كلمة السر ضعيفة';
           break;
+
         case 'network-request-failed':
           message = 'تأكد من اتصال الإنترنت';
           break;
+
         default:
           message = 'تعذر إنشاء الحساب: ${e.code}';
       }
@@ -385,7 +404,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (mounted) {
-      setState(() => loading = false);
+      setState(() {
+        loading = false;
+      });
     }
   }
 
@@ -495,7 +516,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 // =====================================================
-// HOME
+// HOME SCREEN
 // =====================================================
 
 class HomeScreen extends StatefulWidget {
@@ -555,7 +576,9 @@ class _HomeScreenState extends State<HomeScreen> {
       showMessage('حدث خطأ أثناء البحث');
     } finally {
       if (mounted) {
-        setState(() => searching = false);
+        setState(() {
+          searching = false;
+        });
       }
     }
   }
@@ -706,7 +729,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            ConversationsList(currentUid: currentUid),
+            ConversationsList(
+              currentUid: currentUid,
+            ),
           ],
         ),
       ),
@@ -715,7 +740,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // =====================================================
-// USER RESULT
+// USER RESULT CARD
 // =====================================================
 
 class UserResultCard extends StatelessWidget {
@@ -755,7 +780,9 @@ class UserResultCard extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(user['email'] ?? ''),
+        subtitle: Text(
+          user['email'] ?? '',
+        ),
         trailing: const CircleAvatar(
           backgroundColor: Color(0xFF6750A4),
           child: Icon(
@@ -785,8 +812,10 @@ class ConversationsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final query = FirebaseFirestore.instance
         .collection('chats')
-        .where('participants', arrayContains: currentUid)
-        .orderBy('updatedAt', descending: true);
+        .where(
+          'participants',
+          arrayContains: currentUid,
+        );
 
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: query.snapshots(),
@@ -805,7 +834,8 @@ class ConversationsList extends StatelessWidget {
           );
         }
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(20),
@@ -843,18 +873,593 @@ class ConversationsList extends StatelessWidget {
                 Text(
                   'ابحث عن شخص بالإيميل وابدأ أول محادثة',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(
+                    color: Colors.grey,
+                  ),
                 ),
               ],
             ),
           );
         }
 
+        final sortedDocs = [...docs];
+
+        sortedDocs.sort((a, b) {
+          final aData = a.data();
+          final bData = b.data();
+
+          final aTime = aData['updatedAt'];
+          final bTime = bData['updatedAt'];
+
+          if (aTime is Timestamp &&
+              bTime is Timestamp) {
+            return bTime.compareTo(aTime);
+          }
+
+          if (aTime is Timestamp) return -1;
+          if (bTime is Timestamp) return 1;
+
+          return 0;
+        });
+
         return Column(
-          children: docs.map((doc) {
+          children: sortedDocs.map((doc) {
             final data = doc.data();
-            final participants =
-                List<String>.from(data['participants'] ?? []);
+
+            final rawParticipants =
+                data['participants'];
+
+            final participants = rawParticipants is List
+                ? rawParticipants
+                    .map((e) => e.toString())
+                    .toList()
+                : <String>[];
 
             final otherUid = participants.firstWhere(
-              (id)
+              (id) => id != currentUid,
+              orElse: () => '',
+            );
+
+            if (otherUid.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return ConversationTile(
+              key: ValueKey(doc.id),
+              otherUid: otherUid,
+              chatData: data,
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+// =====================================================
+// CONVERSATION TILE
+// =====================================================
+
+class ConversationTile extends StatelessWidget {
+  final String otherUid;
+  final Map<String, dynamic> chatData;
+
+  const ConversationTile({
+    super.key,
+    required this.otherUid,
+    required this.chatData,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<
+        DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance
+          .collection('users')
+          .doc(otherUid)
+          .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState ==
+            ConnectionState.waiting) {
+          return const Card(
+            elevation: 0,
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Icon(Icons.person),
+              ),
+              title: Text('جاري التحميل...'),
+            ),
+          );
+        }
+
+        final userData = snapshot.data?.data();
+
+        final name =
+            userData?['name']?.toString() ?? 'مستخدم';
+
+        final email =
+            userData?['email']?.toString() ?? '';
+
+        final lastMessage =
+            chatData['lastMessage']?.toString() ??
+                'ابدأ المحادثة';
+
+        return Card(
+          elevation: 0,
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 15,
+              vertical: 5,
+            ),
+            leading: const CircleAvatar(
+              radius: 25,
+              backgroundColor: Color(0xFFE8DEF8),
+              child: Icon(
+                Icons.person,
+                color: Color(0xFF6750A4),
+              ),
+            ),
+            title: Text(
+              name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              lastMessage.isEmpty
+                  ? email
+                  : lastMessage,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: const Icon(
+              Icons.chevron_left_rounded,
+              color: Colors.grey,
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    otherUser: {
+                      'uid': otherUid,
+                      'name': name,
+                      'email': email,
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+// =====================================================
+// CHAT SCREEN
+// =====================================================
+
+class ChatScreen extends StatefulWidget {
+  final Map<String, dynamic> otherUser;
+
+  const ChatScreen({
+    super.key,
+    required this.otherUser,
+  });
+
+  @override
+  State<ChatScreen> createState() =>
+      _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final messageController = TextEditingController();
+  final scrollController = ScrollController();
+
+  bool sending = false;
+
+  late final String currentUid;
+  late final String otherUid;
+  late final String chatId;
+
+  @override
+  void initState() {
+    super.initState();
+
+    currentUid =
+        FirebaseAuth.instance.currentUser!.uid;
+
+    otherUid =
+        widget.otherUser['uid'].toString();
+
+    final ids = [currentUid, otherUid]..sort();
+
+    chatId = '${ids[0]}_${ids[1]}';
+
+    _createChat();
+  }
+
+  Future<void> _createChat() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId)
+          .set(
+        {
+          'participants': [
+            currentUid,
+            otherUid,
+          ],
+          'updatedAt':
+              FieldValue.serverTimestamp(),
+          'lastMessage': '',
+        },
+        SetOptions(merge: true),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> sendMessage() async {
+    final text =
+        messageController.text.trim();
+
+    if (text.isEmpty || sending) return;
+
+    messageController.clear();
+
+    setState(() {
+      sending = true;
+    });
+
+    try {
+      final chatRef = FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId);
+
+      await chatRef.set(
+        {
+          'participants': [
+            currentUid,
+            otherUid,
+          ],
+          'updatedAt':
+              FieldValue.serverTimestamp(),
+          'lastMessage': text,
+        },
+        SetOptions(merge: true),
+      );
+
+      await chatRef
+          .collection('messages')
+          .add({
+        'senderId': currentUid,
+        'text': text,
+        'createdAt':
+            FieldValue.serverTimestamp(),
+      });
+
+      _scrollToBottom();
+    } on FirebaseException catch (e) {
+      if (mounted) {
+        showMessage(
+          'تعذر إرسال الرسالة: ${e.code}',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        showMessage(
+          'تعذر إرسال الرسالة',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          sending = false;
+        });
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) {
+      if (!mounted ||
+          !scrollController.hasClients) {
+        return;
+      }
+
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration:
+            const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  void showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior:
+            SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final otherName =
+        widget.otherUser['name']
+                ?.toString() ??
+            'مستخدم';
+
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const CircleAvatar(
+              radius: 19,
+              backgroundColor:
+                  Color(0xFFE8DEF8),
+              child: Icon(
+                Icons.person,
+                size: 22,
+                color: Color(0xFF6750A4),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                otherName,
+                overflow:
+                    TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight:
+                      FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder<
+                QuerySnapshot<
+                    Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('chats')
+                  .doc(chatId)
+                  .collection('messages')
+                  .orderBy('createdAt')
+                  .snapshots(),
+              builder:
+                  (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text(
+                      'تعذر تحميل الرسائل',
+                    ),
+                  );
+                }
+
+                if (snapshot
+                        .connectionState ==
+                    ConnectionState.waiting) {
+                  return const Center(
+                    child:
+                        CircularProgressIndicator(),
+                  );
+                }
+
+                final docs =
+                    snapshot.data?.docs ??
+                        [];
+
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisSize:
+                          MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons
+                              .chat_bubble_outline_rounded,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'ابدأ أول رسالة 👋',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 17,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  controller:
+                      scrollController,
+                  padding:
+                      const EdgeInsets.fromLTRB(
+                    15,
+                    20,
+                    15,
+                    20,
+                  ),
+                  itemCount: docs.length,
+                  itemBuilder:
+                      (context, index) {
+                    final data =
+                        docs[index].data();
+
+                    final text =
+                        data['text']
+                                ?.toString() ??
+                            '';
+
+                    final senderId =
+                        data['senderId']
+                                ?.toString() ??
+                            '';
+
+                    return MessageBubble(
+                      text: text,
+                      isMe:
+                          senderId ==
+                              currentUid,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          _messageInput(),
+        ],
+      ),
+    );
+  }
+
+  Widget _messageInput() {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding:
+            const EdgeInsets.fromLTRB(
+          12,
+          8,
+          12,
+          10,
+        ),
+        color: Colors.white,
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller:
+                    messageController,
+                textInputAction:
+                    TextInputAction.send,
+                minLines: 1,
+                maxLines: 4,
+                onSubmitted: (_) =>
+                    sendMessage(),
+                decoration:
+                    const InputDecoration(
+                  hintText:
+                      'اكتب رسالة...',
+                  prefixIcon: Icon(
+                    Icons.message_outlined,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FloatingActionButton(
+              heroTag: null,
+              mini: true,
+              onPressed:
+                  sending
+                      ? null
+                      : sendMessage,
+              child: const Icon(
+                Icons.send_rounded,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =====================================================
+// MESSAGE BUBBLE
+// =====================================================
+
+class MessageBubble extends StatelessWidget {
+  final String text;
+  final bool isMe;
+
+  const MessageBubble({
+    super.key,
+    required this.text,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMe
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: Container(
+        constraints:
+            const BoxConstraints(
+          maxWidth: 300,
+        ),
+        margin:
+            const EdgeInsets.only(
+          bottom: 8,
+        ),
+        padding:
+            const EdgeInsets.symmetric(
+          horizontal: 15,
+          vertical: 11,
+        ),
+        decoration:
+            BoxDecoration(
+          color: isMe
+              ? const Color(0xFF6750A4)
+              : Colors.white,
+          borderRadius:
+              BorderRadius.only(
+            topLeft:
+                const Radius.circular(18),
+            topRight:
+                const Radius.circular(18),
+            bottomLeft:
+                Radius.circular(
+              isMe ? 18 : 4,
+            ),
+            bottomRight:
+                Radius.circular(
+              isMe ? 4 : 18,
+            ),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isMe
+                ? Colors.white
+                : Colors.black87,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+}
